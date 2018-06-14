@@ -5,7 +5,7 @@ SquareMatrix::SquareMatrix(const std::string& s) : Matrix(s) {
 		// TODO: throw exception (not a square matrix)
 	}
 }
-SquareMatrix::SquareMatrix(ComplexNumber** m, const int& size) : Matrix(m, size, size) {
+SquareMatrix::SquareMatrix(ComplexNumber** m, const size_t& size) : Matrix(m, size, size) {
 	if (rows != cols) {
 		// TODO: throw exception (not a square matrix)
 	}
@@ -15,7 +15,7 @@ const SquareMatrix SquareMatrix::inverse() const {
 	Matrix augmented = augment(identity()).rowReduce();
 	/*Matrix augmented = augment(identity());
 	for (size_t j = 0; j < cols; j++) {
-	int nextRow = augmented.findNextNonZeroEntry(j);
+	size_t nextRow = augmented.findNextNonZeroEntry(j);
 	if (nextRow == -1) { //the entire column has 0 entries
 	continue;
 	}
@@ -48,7 +48,7 @@ const SquareMatrix SquareMatrix::inverse() const {
 	//de-augment the matrix
 	ComplexNumber** c = new ComplexNumber*[rows];
 	#pragma omp parallel for
-	for (int i = 0; i < rows; i++) {
+	for (size_t i = 0; i < rows; i++) {
 		c[i] = new ComplexNumber[cols];
 		for (size_t j = 0; j < cols; j++) {
 			c[i][j] = augmented(i, j + cols);
@@ -61,10 +61,10 @@ const SquareMatrix SquareMatrix::identity() const {
 	return identity(rows);
 }
 /* Returns a new identity SquareMatrix of the given dimensions. */
-const SquareMatrix SquareMatrix::identity(const int& size) {
+const SquareMatrix SquareMatrix::identity(const size_t& size) {
 	ComplexNumber** c = new ComplexNumber*[size];
 	#pragma omp parallel for
-	for (int i = 0; i < size; i++) {
+	for (size_t i = 0; i < size; i++) {
 		c[i] = new ComplexNumber[size];
 		for (size_t j = 0; j < size; j++) {
 			if (i == j) {

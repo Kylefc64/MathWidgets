@@ -15,12 +15,12 @@ public:
 	Matrix(const std::string&); //must be parsed
 	Matrix(const Matrix&); //copy constructor
 	Matrix(Matrix&&); //move constructor
-	Matrix(const int&, const int&); //creates a matrix of zeros
-	Matrix(ComplexNumber**, const int&, const int&); //mostly to be used for testing purposes
+	Matrix(const size_t&, const size_t&); //creates a matrix of zeros
+	Matrix(ComplexNumber**, const size_t&, const size_t&); //mostly to be used for testing purposes
 	~Matrix();
 	Matrix& operator=(const Matrix&); //copy assignment operator
 	Matrix& operator=(Matrix&&); //move assignment operator
-	ComplexNumber& operator()(const int&, const int&); //access/mutation operator
+	ComplexNumber& operator()(const size_t&, const size_t&); //access/mutation operator
 	friend const Matrix operator+(const Matrix&, const Matrix&); //element-wise addition
 	friend const Matrix operator-(const Matrix&, const Matrix&); //element-wise subtraction
 	friend const Matrix operator*(const Matrix&, const Matrix&); //element-wise multiplication
@@ -39,24 +39,24 @@ public:
 	friend std::ostream& operator<<(std::ostream&, const Matrix&); //Inserts the contents of a Matrix into an ostream
 	friend std::istream& operator >> (std::istream&, Matrix&); //Extracts Matrix data from an istream and inserts it into a Matrix object
 	Matrix rowReduce() const; //returns a row-reduced matrix
-	Matrix verticalPad(const int&) const; //returns a Matrix zero-padded on the bottom by the specified size
-	Matrix horizontalPad(const int&) const; //returns a Matrix zero-padded on the right by the specified size
+	Matrix verticalPad(const size_t&) const; //returns a Matrix zero-padded on the bottom by the specified size
+	Matrix horizontalPad(const size_t&) const; //returns a Matrix zero-padded on the right by the specified size
 	Matrix nullSpace() const;
-	bool allZeros(const int&, const int&, const int&) const; //returns true if the entire row (from start to end) is 0
+	bool allZeros(const size_t&, const size_t&, const size_t&) const; //returns true if the entire row (from start to end) is 0
 
 	//Matrix LSCSort() const; //least significant column sort
 
 protected:
-	int rows;
-	int cols;
+	size_t rows;
+	size_t cols;
 	ComplexNumber** matrix;
-	ComplexNumber* getRow(const int&) const; //returns the ith row of matrix (assumes that i is a valid row)
+	ComplexNumber* getRow(const size_t&) const; //returns the ith row of matrix (assumes that i is a valid row)
 
 private:
 	//std::vector<std::string> parseRow(const std::string&); //returns a vector containing elements of a matrix row
-	int findNextNonZeroEntry(const int&); //returns the row of the first non-zero entry in the specified column, or -1
+	size_t findNextNonZeroEntry(const size_t&); //returns the row of the first non-zero entry in the specified column, or -1
 	void swap(ComplexNumber*&, ComplexNumber*&) const; //swaps the contents of each row
-	int findNextZeroRow(const int&) const; //finds the next row full of zeros starting at the specified index
+	size_t findNextZeroRow(const size_t&) const; //finds the next row full of zeros starting at the specified index
 	const std::vector<std::vector<std::string>>& parseRowVectors(const std::string) const;
 	void initMatrix(const std::vector<std::vector<std::string>>&);
 };

@@ -61,7 +61,7 @@ void testOpenMP() {
 	ComplexNumber **c2 = new ComplexNumber*[MAX_SIZE];
 	clock_t tStart = clock(); //start timer
 	#pragma omp parallel for
-	for (int i = 0; i < MAX_SIZE; i++) {
+	for (size_t i = 0; i < MAX_SIZE; i++) {
 		c1[i] = new ComplexNumber[MAX_SIZE];
 		c2[i] = new ComplexNumber[MAX_SIZE];
 		for (size_t j = 0; j < MAX_SIZE; j++) {

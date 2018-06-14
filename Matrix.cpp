@@ -7,17 +7,17 @@ Matrix::Matrix(const std::string& s) {
 	//initialize the Matrix
 	initMatrix(rowVectors);
 }
-Matrix::Matrix(const int& r, const int& c) : rows(r), cols(c) {
+Matrix::Matrix(const size_t& r, const size_t& c) : rows(r), cols(c) {
 	matrix = new ComplexNumber*[rows];
 	#pragma omp parallel for
-	for (int i = 0; i < rows; i++) {
+	for (size_t i = 0; i < rows; i++) {
 		matrix[i] = new ComplexNumber[cols];
 	}
 }
-Matrix::Matrix(ComplexNumber** m, const int& r, const int& c) :rows(r), cols(c) {
+Matrix::Matrix(ComplexNumber** m, const size_t& r, const size_t& c) :rows(r), cols(c) {
 	matrix = new ComplexNumber*[rows];
 	#pragma omp parallel for
-	for (int i = 0; i < rows; i++) {
+	for (size_t i = 0; i < rows; i++) {
 		matrix[i] = new ComplexNumber[cols];
 		for (size_t j = 0; j < cols; j++) {
 			matrix[i][j] = m[i][j];
@@ -27,7 +27,7 @@ Matrix::Matrix(ComplexNumber** m, const int& r, const int& c) :rows(r), cols(c) 
 Matrix::Matrix(const Matrix& m) : rows(m.rows), cols(m.cols) {
 	matrix = new ComplexNumber*[rows];
 	#pragma omp parallel for
-	for (int i = 0; i < rows; i++) {
+	for (size_t i = 0; i < rows; i++) {
 		matrix[i] = new ComplexNumber[cols];
 		for (size_t j = 0; j < cols; j++) {
 			matrix[i][j] = m.matrix[i][j];
@@ -41,7 +41,7 @@ Matrix::Matrix(Matrix&& m) : rows(m.rows), cols(m.cols) {
 Matrix::~Matrix() {
 	if (matrix) {
 		#pragma omp parallel for
-		for (int i = 0; i < rows; i++) {
+		for (size_t i = 0; i < rows; i++) {
 			delete[] matrix[i];
 		}
 		delete[] matrix;
@@ -54,7 +54,7 @@ Matrix& Matrix::operator=(const Matrix& m) {
 	if (rows == m.rows && cols == m.cols) {
 		//do not reallocate matrix
 		#pragma omp parallel for
-		for (int i = 0; i < rows; i++) {
+		for (size_t i = 0; i < rows; i++) {
 			for (size_t j = 0; j < cols; j++) {
 				matrix[i][j] = m.matrix[i][j];
 			}
@@ -62,7 +62,7 @@ Matrix& Matrix::operator=(const Matrix& m) {
 		return *this;
 	}
 	#pragma omp parallel for
-	for (int i = 0; i < rows; i++) {
+	for (size_t i = 0; i < rows; i++) {
 		delete[] matrix[i];
 	}
 	#pragma omp barrier
@@ -71,7 +71,7 @@ Matrix& Matrix::operator=(const Matrix& m) {
 	cols = m.cols;
 	matrix = new ComplexNumber*[m.rows];
 	#pragma omp parallel for
-	for (int i = 0; i < rows; i++) {
+	for (size_t i = 0; i < rows; i++) {
 		matrix[i] = new ComplexNumber[cols];
 		for (size_t j = 0; j < cols; j++) {
 			matrix[i][j] = m.matrix[i][j];
@@ -82,7 +82,7 @@ Matrix& Matrix::operator=(const Matrix& m) {
 Matrix& Matrix::operator=(Matrix&& m) {
 	//std::cout << "move assignment operator";
 	ComplexNumber** temp = m.matrix;
-	int r = m.rows, c = m.cols;
+	size_t r = m.rows, c = m.cols;
 	m.matrix = matrix;
 	m.rows = rows;
 	m.cols = cols;
@@ -91,8 +91,8 @@ Matrix& Matrix::operator=(Matrix&& m) {
 	cols = c;
 	return *this;
 }
-ComplexNumber& Matrix::operator()(const int& row, const int& col) {
-	if (row < 0 || row >= rows || col < 0 || col >= cols) {
+ComplexNumber& Matrix::operator()(const size_t& row, const size_t& col) {
+	if (row >= rows || col >= cols) {
 		//TODO: throw exception
 	}
 	return matrix[row][col];
@@ -101,7 +101,7 @@ const Matrix operator+(const Matrix& m1, const Matrix& m2) {
 	Matrix::checkDimensions(m1, m2);
 	Matrix m = Matrix(m1);
 	#pragma omp parallel for
-	for (int i = 0; i < m.rows; i++) {
+	for (size_t i = 0; i < m.rows; i++) {
 		for (size_t j = 0; j < m.cols; j++) {
 			m.matrix[i][j] += m2.matrix[i][j];
 		}
@@ -112,7 +112,7 @@ const Matrix operator-(const Matrix& m1, const Matrix& m2) {
 	Matrix::checkDimensions(m1, m2);
 	Matrix m = Matrix(m1);
 	#pragma omp parallel for
-	for (int i = 0; i < m.rows; i++) {
+	for (size_t i = 0; i < m.rows; i++) {
 		for (size_t j = 0; j < m.cols; j++) {
 			m.matrix[i][j] -= m2.matrix[i][j];
 		}
@@ -123,7 +123,7 @@ const Matrix operator*(const Matrix& m1, const Matrix& m2) {
 	Matrix::checkDimensions(m1, m2);
 	Matrix m = Matrix(m1);
 	#pragma omp parallel for
-	for (int i = 0; i < m.rows; i++) {
+	for (size_t i = 0; i < m.rows; i++) {
 		for (size_t j = 0; j < m.cols; j++) {
 			m.matrix[i][j] *= m2.matrix[i][j];
 		}
@@ -134,7 +134,7 @@ const Matrix operator/(const Matrix& m1, const Matrix& m2) {
 	Matrix::checkDimensions(m1, m2);
 	Matrix m = Matrix(m1);
 	#pragma omp parallel for
-	for (int i = 0; i < m.rows; i++) {
+	for (size_t i = 0; i < m.rows; i++) {
 		for (size_t j = 0; j < m.cols; j++) {
 			m.matrix[i][j] /= m2.matrix[i][j];
 		}
@@ -144,7 +144,7 @@ const Matrix operator/(const Matrix& m1, const Matrix& m2) {
 const Matrix& Matrix::operator+=(const Matrix& m) {
 	Matrix::checkDimensions(*this, m);
 	#pragma omp parallel for
-	for (int i = 0; i < m.rows; i++) {
+	for (size_t i = 0; i < m.rows; i++) {
 		for (size_t j = 0; j < m.cols; j++) {
 			matrix[i][j] += m.matrix[i][j];
 		}
@@ -154,7 +154,7 @@ const Matrix& Matrix::operator+=(const Matrix& m) {
 const Matrix& Matrix::operator-=(const Matrix& m) {
 	Matrix::checkDimensions(*this, m);
 	#pragma omp parallel for
-	for (int i = 0; i < m.rows; i++) {
+	for (size_t i = 0; i < m.rows; i++) {
 		for (size_t j = 0; j < m.cols; j++) {
 			matrix[i][j] -= m.matrix[i][j];
 		}
@@ -164,7 +164,7 @@ const Matrix& Matrix::operator-=(const Matrix& m) {
 const Matrix& Matrix::operator*=(const Matrix& m) {
 	Matrix::checkDimensions(*this, m);
 	#pragma omp parallel for
-	for (int i = 0; i < m.rows; i++) {
+	for (size_t i = 0; i < m.rows; i++) {
 		for (size_t j = 0; j < m.cols; j++) {
 			matrix[i][j] *= m.matrix[i][j];
 		}
@@ -174,7 +174,7 @@ const Matrix& Matrix::operator*=(const Matrix& m) {
 const Matrix& Matrix::operator/=(const Matrix& m) {
 	Matrix::checkDimensions(*this, m);
 	#pragma omp parallel for
-	for (int i = 0; i < m.rows; i++) {
+	for (size_t i = 0; i < m.rows; i++) {
 		for (size_t j = 0; j < m.cols; j++) {
 			matrix[i][j] /= m.matrix[i][j];
 		}
@@ -187,7 +187,7 @@ const Matrix Matrix::dot(const Matrix& m) const {
 	}
 	ComplexNumber** result = new ComplexNumber*[rows];
 	#pragma omp parallel for
-	for (int i = 0; i < rows; i++) {
+	for (size_t i = 0; i < rows; i++) {
 		result[i] = new ComplexNumber[m.cols];
 		for (size_t j = 0; j < m.cols; j++) {
 			for (size_t k = 0; k < cols; k++) {
@@ -203,7 +203,7 @@ Matrix Matrix::augment(const Matrix& m) const {
 	}
 	ComplexNumber** c = new ComplexNumber*[rows];
 	#pragma omp parallel for
-	for (int i = 0; i < rows; i++) {
+	for (size_t i = 0; i < rows; i++) {
 		c[i] = new ComplexNumber[cols + m.cols];
 		for (size_t j = 0; j < cols; j++) {
 			c[i][j] = matrix[i][j];
@@ -217,7 +217,7 @@ Matrix Matrix::augment(const Matrix& m) const {
 const Matrix Matrix::transpose() const {
 	ComplexNumber** result = new ComplexNumber*[cols];
 	#pragma omp parallel for
-	for (int i = 0; i < cols; i++) {
+	for (size_t i = 0; i < cols; i++) {
 		result[i] = new ComplexNumber[rows];
 		for (size_t j = 0; j < rows; j++) {
 			result[i][j] = matrix[j][i];
@@ -245,7 +245,7 @@ void Matrix::checkDimensions(const Matrix& m1, const Matrix& m2) {
 const Matrix Matrix::conjugateTranspose() const {
 	ComplexNumber** result = new ComplexNumber*[cols];
 	#pragma omp parallel for
-	for (int i = 0; i < cols; i++) {
+	for (size_t i = 0; i < cols; i++) {
 		result[i] = new ComplexNumber[rows];
 		for (size_t j = 0; j < rows; j++) {
 			result[i][j] = matrix[j][i].conjugate();
@@ -308,7 +308,7 @@ std::istream& operator>>(std::istream& is, Matrix& c) {
 	}*/
 	return is;
 }
-int Matrix::findNextZeroRow(const int& index) const {
+size_t Matrix::findNextZeroRow(const size_t& index) const {
 	for (size_t i = index; i < rows; i++) {
 		if (allZeros(i, index + 1, rows)) { //index+1 b/c findNextNonZeroEntry already checked for zeros in column <index>
 			return i;
@@ -321,7 +321,7 @@ Matrix Matrix::rowReduce() const {
 	//Usually works except for special cases:
 	Matrix result(*this);
 	for (size_t j = 0; j < rows; j++) {
-		int nextRow = result.findNextNonZeroEntry(j);
+		size_t nextRow = result.findNextNonZeroEntry(j);
 		if (nextRow == rows) {
 			continue;
 		} else if (nextRow == -1) { //the entire column has 0 entries
@@ -350,10 +350,10 @@ Matrix Matrix::rowReduce() const {
 	}
 	return result;
 }
-Matrix Matrix::verticalPad(const int& zeros) const {
+Matrix Matrix::verticalPad(const size_t& zeros) const {
 	ComplexNumber** c = new ComplexNumber*[rows + zeros];
 	#pragma omp parallel for
-	for (int i = 0; i < rows; i++) {
+	for (size_t i = 0; i < rows; i++) {
 		c[i] = new ComplexNumber[cols];
 		for (size_t j = 0; j < cols; j++) {
 			c[i][j] = matrix[i][j];
@@ -361,10 +361,10 @@ Matrix Matrix::verticalPad(const int& zeros) const {
 	}
 	return Matrix(c, rows + zeros, cols);
 }
-Matrix Matrix::horizontalPad(const int& zeros) const {
+Matrix Matrix::horizontalPad(const size_t& zeros) const {
 	ComplexNumber** c = new ComplexNumber*[rows];
 	#pragma omp parallel for
-	for (int i = 0; i < rows; i++) {
+	for (size_t i = 0; i < rows; i++) {
 		c[i] = new ComplexNumber[cols + zeros];
 		for (size_t j = 0; j < cols + zeros; j++) {
 			c[i][j] = matrix[i][j];
@@ -380,7 +380,8 @@ Matrix Matrix::nullSpace() const { //this function is incomplete
 	Matrix reduced = rowReduce();
 	return reduced; //TODO: complete this function
 }
-bool Matrix::allZeros(const int& row, const int& start, const int& end) const {
+/* Returns true if row i is all zeros from col start to col end. */
+bool Matrix::allZeros(const size_t& row, const size_t& start, const size_t& end) const {
 	ComplexNumber zero = ComplexNumber(0, 0);
 	for (size_t col = start; col < end; col++) {
 		if (matrix[row][col] != zero) {
@@ -391,8 +392,9 @@ bool Matrix::allZeros(const int& row, const int& start, const int& end) const {
 }
 
 //protected functions
-/* Returns true if row i is all zeros from col start to col end. */
-ComplexNumber* Matrix::getRow(const int& i) const {
+
+/* Returns the ith row. Assumes that derived classes request a valid row. */
+ComplexNumber* Matrix::getRow(const size_t& i) const {
 	return matrix[i];
 }
 
@@ -402,11 +404,12 @@ ComplexNumber* Matrix::getRow(const int& i) const {
 
 }*/
 
-int Matrix::findNextNonZeroEntry(const int& column) {
+/* Returns the row of the next non-zero entry in the specified column, or -1. */
+size_t Matrix::findNextNonZeroEntry(const size_t& column) {
 	if (column == rows) {
 		return column; //if there are no more rows
 	}
-	for (int i = column; i < rows; i++) {
+	for (size_t i = column; i < rows; i++) {
 		if (matrix[i][column] != ComplexNumber(0, 0)) {
 			return i;
 		}
