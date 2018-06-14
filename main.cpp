@@ -204,7 +204,7 @@ void testSolver() {
 
 	std::cout << A.inverse() << "\n\n";
 
-	std::cout << Matrix::solve(A, bVec) << "\n\n";
+	std::cout << SquareMatrix::solve(A, bVec) << "\n\n";
 }
 void testInverseReal() {
 	SquareMatrix m1 = SquareMatrix("[[1,2,3],[0, 0, 3],[0, 5, 0]]");

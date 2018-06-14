@@ -74,3 +74,9 @@ const SquareMatrix SquareMatrix::identity(const size_t& size) {
 	}
 	return SquareMatrix(c, size);
 }
+Matrix SquareMatrix::solve(const SquareMatrix& A, const Matrix& b) {
+	if (b.numCols() != 1) {
+		//TODO: throw exception
+	}
+	return A.inverse().dot(b);
+}

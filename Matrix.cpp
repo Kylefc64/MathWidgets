@@ -225,12 +225,6 @@ const Matrix Matrix::transpose() const {
 	}
 	return Matrix(result, cols, rows);
 }
-Matrix Matrix::solve(const SquareMatrix& A, const Matrix& b) {
-	if (b.cols != 1) {
-		//TODO: throw exception
-	}
-	return A.inverse().dot(b);
-}
 Matrix Matrix::leastSquares(const Matrix& A, const Matrix& b) {
 	if (b.cols != 1) {
 		//TODO: throw exception
@@ -389,6 +383,12 @@ bool Matrix::allZeros(const size_t& row, const size_t& start, const size_t& end)
 		}
 	}
 	return true;
+}
+size_t Matrix::numRows() const {
+	return rows;
+}
+size_t Matrix::numCols() const {
+	return cols;
 }
 
 //protected functions

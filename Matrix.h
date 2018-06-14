@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <vector>
 #include "ComplexNumber.h"
-#include "SquareMatrix.h"
 #include <omp.h>
 #include <intrin.h>
 
@@ -34,7 +33,6 @@ public:
 	const Matrix transpose() const; //calculates the transpose of this matrix, if it exists
 	const Matrix conjugateTranspose() const; //calculates the conjugate transpose of a matrix
 	static void checkDimensions(const Matrix&, const Matrix&); //throws an exception if dimensions of matrices do not match
-	static Matrix solve(const SquareMatrix&, const Matrix&); //calculates the solution to Ax=b
 	static Matrix leastSquares(const Matrix&, const Matrix&); //calculates x = ((aTa)^-1)aTb
 	friend std::ostream& operator<<(std::ostream&, const Matrix&); //Inserts the contents of a Matrix into an ostream
 	friend std::istream& operator >> (std::istream&, Matrix&); //Extracts Matrix data from an istream and inserts it into a Matrix object
@@ -43,6 +41,8 @@ public:
 	Matrix horizontalPad(const size_t&) const; //returns a Matrix zero-padded on the right by the specified size
 	Matrix nullSpace() const;
 	bool allZeros(const size_t&, const size_t&, const size_t&) const; //returns true if the entire row (from start to end) is 0
+	size_t numRows() const;
+	size_t numCols() const;
 
 	//Matrix LSCSort() const; //least significant column sort
 
