@@ -1,4 +1,9 @@
 /*
+TODO:
+-Use size_t instead of int for rows and cols
+-Represent matrices as a flat contiguous array instead of 2D non-contiguous arrays
+-Fix inverse function
+
 This program will perform common matrix operations including, but not limited to:
 -Element-wise matrix addition, subtraction, multiplication, division - done
 -Matrix dot product calculation - done
@@ -16,6 +21,7 @@ This program will perform common matrix operations including, but not limited to
 */
 #include <iostream>
 #include "Matrix.h"
+#include "SquareMatrix.h"
 #include <time.h>
 
 void testOpenMP();
@@ -29,16 +35,7 @@ void testInverseReal();
 void testMatrixComplex();
 void testMatrix();
 void testComplexNumber();
-/*class Test {
-private:
-	double x;
-	double y;
-public:
-	Test(int a, int b) :x(a), y(b) {}
-	Test(const Test& t) :x(t.x), y(t.y) { std::cout << "Copy constructor\n" << std::endl; }
-	double getX() { return x; }
-	void setX(double a) { x = a; }
-};*/
+
 int main() {
 	clock_t tStart = clock(); //
 
@@ -200,7 +197,7 @@ void testSolver() {
 	b[2] = new ComplexNumber[1];
 	b[2][0] = ComplexNumber(22, 0);
 
-	Matrix A(a, 3, 3);
+	SquareMatrix A(a, 3);
 	Matrix bVec(b, 3, 1);
 
 	std::cout << bVec << "\n\n";
@@ -210,9 +207,9 @@ void testSolver() {
 	std::cout << Matrix::solve(A, bVec) << "\n\n";
 }
 void testInverseReal() {
-	Matrix m1 = Matrix("[[1,2,3],[0, 0, 3],[0, 5, 0]]");
+	SquareMatrix m1 = SquareMatrix("[[1,2,3],[0, 0, 3],[0, 5, 0]]");
 	std::cout << m1.rowReduce() << "\n\n";
-	Matrix m2 = m1.inverse();
+	SquareMatrix m2 = m1.inverse();
 	std::cout << m2 << "\n\n";
 	std::cout << m2.dot(m1) << "\n\n";
 

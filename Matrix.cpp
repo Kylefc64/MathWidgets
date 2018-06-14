@@ -1,36 +1,13 @@
 #include "Matrix.h"
+#include "SquareMatrix.h"
 
 Matrix::Matrix(const std::string& s) {
 	//Assumes str is syntactically correct (for now)
-	std::string str(s);
-	std::vector<std::vector<std::string>> rowVectors;
-	std::vector<std::string> vec;
-	str.erase(remove_if(str.begin(), str.end(), isspace), str.end()); //remove whitespace
-	size_t prev = 2, pos;
-	while ((pos = str.find_first_of("[,]", prev)) != std::string::npos) {
-		char delim = str[pos];
-		if (delim == ',') {
-			vec.push_back(str.substr(prev, pos - prev));
-		} else if (delim == ']' && pos + 1 < str.length()) {
-			vec.push_back(str.substr(prev, pos - prev));
-			rowVectors.push_back(vec);
-			vec.clear();
-			pos++;
-		}
-		prev = pos + 1;
-	}
+	const std::vector<std::vector<std::string>> rowVectors = parseRowVectors(s);
 	//initialize the Matrix
-	rows = rowVectors.size();
-	cols = rowVectors.at(0).size();
-	matrix = new ComplexNumber*[rows];
-	for (size_t i = 0; i < rows; i++) {
-		matrix[i] = new ComplexNumber[cols];
-		for (size_t j = 0; j < cols; j++) {
-			rowVectors.at(i).at(j) >> matrix[i][j]; //see ComplexNumber::operator>>
-		}
-	}
+	initMatrix(rowVectors);
 }
-Matrix::Matrix(const int& r, const int& c) :rows(r), cols(c) {
+Matrix::Matrix(const int& r, const int& c) : rows(r), cols(c) {
 	matrix = new ComplexNumber*[rows];
 	#pragma omp parallel for
 	for (int i = 0; i < rows; i++) {
@@ -47,7 +24,7 @@ Matrix::Matrix(ComplexNumber** m, const int& r, const int& c) :rows(r), cols(c) 
 		}
 	}
 }
-Matrix::Matrix(const Matrix& m):rows(m.rows), cols(m.cols) {
+Matrix::Matrix(const Matrix& m) : rows(m.rows), cols(m.cols) {
 	matrix = new ComplexNumber*[rows];
 	#pragma omp parallel for
 	for (int i = 0; i < rows; i++) {
@@ -57,7 +34,7 @@ Matrix::Matrix(const Matrix& m):rows(m.rows), cols(m.cols) {
 		}
 	}
 }
-Matrix::Matrix(Matrix&& m) :rows(m.rows), cols(m.cols) {
+Matrix::Matrix(Matrix&& m) : rows(m.rows), cols(m.cols) {
 	matrix = m.matrix;
 	m.matrix = nullptr;
 }
@@ -220,55 +197,6 @@ const Matrix Matrix::dot(const Matrix& m) const {
 	}
 	return Matrix(result, rows, m.cols);
 }
-const Matrix Matrix::inverse() const {
-	if (rows != cols) {
-		//TODO: throw exception
-	}
-	Matrix augmented = augment(identity()).rowReduce();
-	/*Matrix augmented = augment(identity());
-	for (size_t j = 0; j < cols; j++) {
-		int nextRow = augmented.findNextNonZeroEntry(j);
-		if (nextRow == -1) { //the entire column has 0 entries
-			continue;
-		}
-		else if (nextRow != j) { //keeps the pivots in the correct rows/columns
-			swap(augmented.matrix[nextRow], augmented.matrix[j]);
-			nextRow = j;
-		}
-		//divide row nextRow by the first non-zero entry in that row
-		//this results in a "1" in column j
-		ComplexNumber divisor = augmented.matrix[nextRow][j];
-		for (size_t k = j; k < 2 * cols; k++) {
-			augmented.matrix[nextRow][k] /= divisor;
-		}
-		//zero out column j of every row except for nextRow
-		for (size_t i = 0; i < rows; i++) {
-			if (i != nextRow) {
-				ComplexNumber multiple = augmented.matrix[i][j];
-				for (size_t k = j; k < 2 * cols; k++) {
-					augmented.matrix[i][k] -= multiple * augmented.matrix[nextRow][k];
-				}
-			}
-		}
-	}*/
-	//verify that the matrix is indeed invertible (that all rows are non-zero after Gaussian-elimination)
-	for (size_t i = 0; i < rows; i++) {
-		if (allZeros(augmented.matrix[i], 0, 2*cols)) {
-			//TODO: throw exception
-		}
-	}
-	//de-augment the matrix
-	ComplexNumber** c = new ComplexNumber*[rows];
-	#pragma omp parallel for
-	for (int i = 0; i < rows; i++) {
-		c[i] = new ComplexNumber[cols];
-		for (size_t j = 0; j < cols; j++) {
-			c[i][j] = augmented.matrix[i][j + cols];
-		}
-	}
-	return Matrix(c, rows, cols);
-}
-
 Matrix Matrix::augment(const Matrix& m) const {
 	if (rows != m.rows) {
 		//TODO: throw exception
@@ -286,35 +214,6 @@ Matrix Matrix::augment(const Matrix& m) const {
 	}
 	return Matrix(c, rows, cols + m.cols);
 }
-const Matrix Matrix::identity() const {
-	if (rows != cols) {
-		//TODO: throw exception
-	}
-	ComplexNumber** c = new ComplexNumber*[rows];
-	#pragma omp parallel for
-	for (int i = 0; i < rows; i++) {
-		c[i] = new ComplexNumber[cols];
-		for (size_t j = 0; j < cols; j++) {
-			if (i == j) {
-				c[i][j] = 1;
-			}
-		}
-	}
-	return Matrix(c, rows, cols);
-}
-const Matrix Matrix::identity(const int& size) {
-	ComplexNumber** c = new ComplexNumber*[size];
-	#pragma omp parallel for
-	for (int i = 0; i < size; i++) {
-		c[i] = new ComplexNumber[size];
-		for (size_t j = 0; j < size; j++) {
-			if (i == j) {
-				c[i][j] = 1;
-			}
-		}
-	}
-	return Matrix(c, size, size);
-}
 const Matrix Matrix::transpose() const {
 	ComplexNumber** result = new ComplexNumber*[cols];
 	#pragma omp parallel for
@@ -326,7 +225,7 @@ const Matrix Matrix::transpose() const {
 	}
 	return Matrix(result, cols, rows);
 }
-Matrix Matrix::solve(const Matrix& A, const Matrix& b) {
+Matrix Matrix::solve(const SquareMatrix& A, const Matrix& b) {
 	if (b.cols != 1) {
 		//TODO: throw exception
 	}
@@ -336,7 +235,7 @@ Matrix Matrix::leastSquares(const Matrix& A, const Matrix& b) {
 	if (b.cols != 1) {
 		//TODO: throw exception
 	}
-	return A.transpose().dot(A).inverse().dot(A.transpose()).dot(b);
+	return static_cast<const SquareMatrix&>(A.transpose().dot(A)).inverse().dot(A.transpose()).dot(b);
 }
 void Matrix::checkDimensions(const Matrix& m1, const Matrix& m2) {
 	if (m1.rows != m2.rows || m1.cols != m2.cols) {
@@ -370,7 +269,7 @@ std::ostream& operator<<(std::ostream& os, const Matrix& c) {
 	os << ']';
 	return os;
 }
-std::istream& operator >> (std::istream& is, Matrix& c) {
+std::istream& operator>>(std::istream& is, Matrix& c) {
 	//TODO: implement this
 	std::string str;
 	std::getline(is, str);
@@ -411,7 +310,7 @@ std::istream& operator >> (std::istream& is, Matrix& c) {
 }
 int Matrix::findNextZeroRow(const int& index) const {
 	for (size_t i = index; i < rows; i++) {
-		if (allZeros(matrix[i], index + 1, rows)) { //index+1 b/c findNextNonZeroEntry already checked for zeros in column <index>
+		if (allZeros(i, index + 1, rows)) { //index+1 b/c findNextNonZeroEntry already checked for zeros in column <index>
 			return i;
 		}
 	}
@@ -481,6 +380,21 @@ Matrix Matrix::nullSpace() const { //this function is incomplete
 	Matrix reduced = rowReduce();
 	return reduced; //TODO: complete this function
 }
+bool Matrix::allZeros(const int& row, const int& start, const int& end) const {
+	ComplexNumber zero = ComplexNumber(0, 0);
+	for (size_t col = start; col < end; col++) {
+		if (matrix[row][col] != zero) {
+			return false;
+		}
+	}
+	return true;
+}
+
+//protected functions
+/* Returns true if row i is all zeros from col start to col end. */
+ComplexNumber* Matrix::getRow(const int& i) const {
+	return matrix[i];
+}
 
 //private functions
 
@@ -499,17 +413,41 @@ int Matrix::findNextNonZeroEntry(const int& column) {
 	}
 	return -1;
 }
-bool Matrix::allZeros(ComplexNumber* c, const int& start, const int& end) const {
-	for (size_t i = start; i < end; i++) {
-		if (c[i] != ComplexNumber(0, 0)) {
-			return false;
-		}
-	}
-	return true;
-}
 void Matrix::swap(ComplexNumber*& c1, ComplexNumber*& c2)  const {
 	ComplexNumber* temp = c1;
 	c1 = c2;
 	c2 = temp;
 	temp = nullptr;
+}
+const std::vector<std::vector<std::string>>& Matrix::parseRowVectors(const std::string s) const {
+	std::string str(s);
+	std::vector<std::vector<std::string>> rowVectors;
+	std::vector<std::string> vec;
+	str.erase(remove_if(str.begin(), str.end(), isspace), str.end()); //remove whitespace
+	size_t prev = 2, pos;
+	while ((pos = str.find_first_of("[,]", prev)) != std::string::npos) {
+		char delim = str[pos];
+		if (delim == ',') {
+			vec.push_back(str.substr(prev, pos - prev));
+		}
+		else if (delim == ']' && pos + 1 < str.length()) {
+			vec.push_back(str.substr(prev, pos - prev));
+			rowVectors.push_back(vec);
+			vec.clear();
+			pos++;
+		}
+		prev = pos + 1;
+	}
+	return rowVectors;
+}
+void Matrix::initMatrix(const std::vector<std::vector<std::string>>& rowVectors) {
+	rows = rowVectors.size();
+	cols = rowVectors.at(0).size();
+	matrix = new ComplexNumber*[rows];
+	for (size_t i = 0; i < rows; i++) {
+		matrix[i] = new ComplexNumber[cols];
+		for (size_t j = 0; j < cols; j++) {
+			rowVectors.at(i).at(j) >> matrix[i][j]; //see ComplexNumber::operator>>
+		}
+	}
 }
