@@ -9,6 +9,7 @@ class SquareMatrix : public Matrix {
 public:
 	SquareMatrix(const std::string&); //constructs a SquareMatrix by parsing an input string
 	SquareMatrix(ComplexNumber**, const size_t&); //mostly for testing purposes
+	SquareMatrix(Matrix&&);
 	const SquareMatrix inverse() const; //calculates the inverse of this matrix, if it exists
 	const SquareMatrix identity() const; //returns the identity matrix of the same size as this matrix, if it exists
 	const static SquareMatrix identity(const size_t&); //returns an identity matrix of specified size

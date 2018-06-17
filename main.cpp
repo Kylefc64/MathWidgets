@@ -1,6 +1,5 @@
 /*
 TODO:
--Use size_t instead of int for rows and cols
 -Represent matrices as a flat contiguous array instead of 2D non-contiguous arrays
 -Fix inverse function
 

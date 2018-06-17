@@ -10,6 +10,12 @@ SquareMatrix::SquareMatrix(ComplexNumber** m, const size_t& size) : Matrix(m, si
 		// TODO: throw exception (not a square matrix)
 	}
 }
+/* Moves an existing Matrix into a SquareMatrix object. */
+SquareMatrix::SquareMatrix(Matrix&& m) : Matrix(std::move(m)) {
+	if (rows != cols) {
+		// TODO: throw exception (not a square matrix)
+	}
+}
 /* Returns a new SquareMatrix that is the inverse of this SquareMatrix. */
 const SquareMatrix SquareMatrix::inverse() const {
 	Matrix augmented = augment(identity()).rowReduce();

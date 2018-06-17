@@ -28,7 +28,7 @@ public:
 	const Matrix& operator-=(const Matrix&);
 	const Matrix& operator*=(const Matrix&);
 	const Matrix& operator/=(const Matrix&);
-	const Matrix dot(const Matrix&) const; //matrix multiplication
+	Matrix dot(const Matrix&) const; //matrix multiplication
 	Matrix augment(const Matrix&) const; //augments m to the right of this matrix
 	const Matrix transpose() const; //calculates the transpose of this matrix, if it exists
 	const Matrix conjugateTranspose() const; //calculates the conjugate transpose of a matrix
@@ -51,14 +51,13 @@ protected:
 	size_t cols;
 	ComplexNumber** matrix;
 	ComplexNumber* getRow(const size_t&) const; //returns the ith row of matrix (assumes that i is a valid row)
+	size_t findNextNonZeroEntry(const size_t&); //returns the row of the first non-zero entry in the specified column, or -1
 
 private:
 	//std::vector<std::string> parseRow(const std::string&); //returns a vector containing elements of a matrix row
-	size_t findNextNonZeroEntry(const size_t&); //returns the row of the first non-zero entry in the specified column, or -1
 	void swap(ComplexNumber*&, ComplexNumber*&) const; //swaps the contents of each row
 	size_t findNextZeroRow(const size_t&) const; //finds the next row full of zeros starting at the specified index
-	const std::vector<std::vector<std::string>>& parseRowVectors(const std::string) const;
+	const std::vector<std::vector<std::string>> parseRowVectors(const std::string) const;
 	void initMatrix(const std::vector<std::vector<std::string>>&);
 };
-
 #endif

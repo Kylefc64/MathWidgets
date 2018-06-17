@@ -181,7 +181,7 @@ const Matrix& Matrix::operator/=(const Matrix& m) {
 	}
 	return *this;
 }
-const Matrix Matrix::dot(const Matrix& m) const {
+Matrix Matrix::dot(const Matrix& m) const {
 	if (cols != m.rows) {
 		//TODO: throw exception
 	}
@@ -229,7 +229,7 @@ Matrix Matrix::leastSquares(const Matrix& A, const Matrix& b) {
 	if (b.cols != 1) {
 		//TODO: throw exception
 	}
-	return static_cast<const SquareMatrix&>(A.transpose().dot(A)).inverse().dot(A.transpose()).dot(b);
+	return SquareMatrix(A.transpose().dot(A)).inverse().dot(A.transpose()).dot(b);
 }
 void Matrix::checkDimensions(const Matrix& m1, const Matrix& m2) {
 	if (m1.rows != m2.rows || m1.cols != m2.cols) {
@@ -398,12 +398,6 @@ ComplexNumber* Matrix::getRow(const size_t& i) const {
 	return matrix[i];
 }
 
-//private functions
-
-/*std::vector<std::string> parseRow(const std::string& str) {
-
-}*/
-
 /* Returns the row of the next non-zero entry in the specified column, or -1. */
 size_t Matrix::findNextNonZeroEntry(const size_t& column) {
 	if (column == rows) {
@@ -416,13 +410,20 @@ size_t Matrix::findNextNonZeroEntry(const size_t& column) {
 	}
 	return -1;
 }
+
+//private functions
+
+/*std::vector<std::string> parseRow(const std::string& str) {
+
+}*/
+
 void Matrix::swap(ComplexNumber*& c1, ComplexNumber*& c2)  const {
 	ComplexNumber* temp = c1;
 	c1 = c2;
 	c2 = temp;
 	temp = nullptr;
 }
-const std::vector<std::vector<std::string>>& Matrix::parseRowVectors(const std::string s) const {
+const std::vector<std::vector<std::string>> Matrix::parseRowVectors(const std::string s) const {
 	std::string str(s);
 	std::vector<std::vector<std::string>> rowVectors;
 	std::vector<std::string> vec;
