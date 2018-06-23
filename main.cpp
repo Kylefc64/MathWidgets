@@ -1,6 +1,7 @@
 /*
 TODO:
--Represent matrices as a flat contiguous array instead of 2D non-contiguous arrays
+-Use a new class to represent 2d contiguous matrices so they they are destroyed
+	automatically when their scope is exited
 -Fix inverse function
 
 This program will perform common matrix operations including, but not limited to:
@@ -39,9 +40,12 @@ int main() {
 	clock_t tStart = clock(); //
 
 	/* un-parallelized (except for testNullSpace) took 34.90 seconds: */
+	// need to fix:
 	testOpenMP();
 	testNullSpace();
 	testRowReduce();
+
+	// works fine:
 	//testMatrixStringConstructor();
 	//testConstructor();
 	//testLeastSquares();
@@ -56,13 +60,11 @@ int main() {
 
 void testOpenMP() {
 	#define MAX_SIZE 3750
-	ComplexNumber **c1 = new ComplexNumber*[MAX_SIZE];
-	ComplexNumber **c2 = new ComplexNumber*[MAX_SIZE];
+	ComplexNumber **c1 = Matrix::allocateContiguousMatrix(MAX_SIZE, MAX_SIZE);
+	ComplexNumber **c2 = Matrix::allocateContiguousMatrix(MAX_SIZE, MAX_SIZE);
 	clock_t tStart = clock(); //start timer
 	#pragma omp parallel for
 	for (size_t i = 0; i < MAX_SIZE; i++) {
-		c1[i] = new ComplexNumber[MAX_SIZE];
-		c2[i] = new ComplexNumber[MAX_SIZE];
 		for (size_t j = 0; j < MAX_SIZE; j++) {
 			c1[i][j] = ComplexNumber(i, j);
 			c2[i][j] = ComplexNumber(i, j);
@@ -112,19 +114,17 @@ void testMatrixStringConstructor() {
 	std::cout << m2 << "\n\n";
 }
 void testConstructor() {
-	ComplexNumber** c1 = new ComplexNumber*[2];
-	c1[0] = new ComplexNumber[2];
+	ComplexNumber** c1 = Matrix::allocateContiguousMatrix(2, 2);
 	c1[0][0] = ComplexNumber(1, 0);
 	c1[0][1] = ComplexNumber(2, 0);
-	c1[1] = new ComplexNumber[2];
+
 	c1[1][0] = ComplexNumber(3, 0);
 	c1[1][1] = ComplexNumber(4, 0);
 
-	ComplexNumber** c2 = new ComplexNumber*[2];
-	c2[0] = new ComplexNumber[2];
+	ComplexNumber** c2 = Matrix::allocateContiguousMatrix(2, 2);
 	c2[0][0] = ComplexNumber(5, 0);
 	c2[0][1] = ComplexNumber(6, 0);
-	c2[1] = new ComplexNumber[2];
+
 	c2[1][0] = ComplexNumber(7, 0);
 	c2[1][1] = ComplexNumber(8, 0);
 
@@ -136,64 +136,64 @@ void testConstructor() {
 	std::cout << m1 << "\n\n";
 }
 void testLeastSquares() { //answer should be: [[1.0507],[-0.143254]]
-	ComplexNumber** a = new ComplexNumber*[6];
-	a[0] = new ComplexNumber[2];
+	ComplexNumber** a = Matrix::allocateContiguousMatrix(6, 2);
+
 	a[0][0] = ComplexNumber(1.2, 0);
 	a[0][1] = ComplexNumber(1, 0);
-	a[1] = new ComplexNumber[2];
+
 	a[1][0] = ComplexNumber(2.3, 0);
 	a[1][1] = ComplexNumber(1, 0);
-	a[2] = new ComplexNumber[2];
+
 	a[2][0] = ComplexNumber(3.0, 0);
 	a[2][1] = ComplexNumber(1, 0);
-	a[3] = new ComplexNumber[2];
+
 	a[3][0] = ComplexNumber(3.8, 0);
 	a[3][1] = ComplexNumber(1, 0);
-	a[4] = new ComplexNumber[2];
+
 	a[4][0] = ComplexNumber(4.7, 0);
 	a[4][1] = ComplexNumber(1, 0);
-	a[5] = new ComplexNumber[2];
+
 	a[5][0] = ComplexNumber(5.9, 0);
 	a[5][1] = ComplexNumber(1, 0);
 
-	ComplexNumber** b = new ComplexNumber*[6];
-	b[0] = new ComplexNumber[1];
+	ComplexNumber** b = Matrix::allocateContiguousMatrix(6, 1);
+
 	b[0][0] = ComplexNumber(1.1, 0);
-	b[1] = new ComplexNumber[1];
+
 	b[1][0] = ComplexNumber(2.1, 0);
-	b[2] = new ComplexNumber[1];
+
 	b[2][0] = ComplexNumber(3.1, 0);
-	b[3] = new ComplexNumber[1];
+
 	b[3][0] = ComplexNumber(4.0, 0);
-	b[4] = new ComplexNumber[1];
+
 	b[4][0] = ComplexNumber(4.9, 0);
-	b[5] = new ComplexNumber[1];
+
 	b[5][0] = ComplexNumber(5.9, 0);
 
 	std::cout << Matrix::leastSquares(Matrix(a, 6, 2), Matrix(b, 6, 1)) << "\n\n";
 }
 void testSolver() {
 	//x = [2, 3, 5]
-	ComplexNumber** a = new ComplexNumber*[3]; //A
-	a[0] = new ComplexNumber[3];
+	ComplexNumber** a = Matrix::allocateContiguousMatrix(3, 3);; //A
+
 	a[0][0] = ComplexNumber(1, 0);
 	a[0][1] = ComplexNumber(2, 0);
 	a[0][2] = ComplexNumber(3, 0);
-	a[1] = new ComplexNumber[3];
+
 	a[1][0] = ComplexNumber(4, 0);
 	a[1][1] = ComplexNumber(5, 0);
 	a[1][2] = ComplexNumber(6, 0);
-	a[2] = new ComplexNumber[3];
+
 	a[2][0] = ComplexNumber(-2, 0);
 	a[2][1] = ComplexNumber(-3, 0);
 	a[2][2] = ComplexNumber(7, 0);
 
-	ComplexNumber** b = new ComplexNumber*[3]; //b
-	b[0] = new ComplexNumber[1];
+	ComplexNumber** b = Matrix::allocateContiguousMatrix(3, 1);; //b
+
 	b[0][0] = ComplexNumber(23, 0);
-	b[1] = new ComplexNumber[1];
+
 	b[1][0] = ComplexNumber(53, 0);
-	b[2] = new ComplexNumber[1];
+
 	b[2][0] = ComplexNumber(22, 0);
 
 	SquareMatrix A(a, 3);
@@ -213,16 +213,16 @@ void testInverseReal() {
 	std::cout << m2.dot(m1) << "\n\n";
 
 	/*
-	ComplexNumber** c = new ComplexNumber*[3];
-	c[0] = new ComplexNumber[3];
+	ComplexNumber** c = Matrix::allocateContiguousMatrix(3, 3);;
+
 	c[0][0] = ComplexNumber(0, 0);
 	c[0][1] = ComplexNumber(2, 0);
 	c[0][2] = ComplexNumber(3, 0);
-	c[1] = new ComplexNumber[3];
+
 	c[1][0] = ComplexNumber(4, 0);
 	c[1][1] = ComplexNumber(5, 0);
 	c[1][2] = ComplexNumber(6, 0);
-	c[2] = new ComplexNumber[3];
+
 	c[2][0] = ComplexNumber(9, 0);
 	c[2][1] = ComplexNumber(8, 0);
 	c[2][2] = ComplexNumber(5, 0);
@@ -234,20 +234,20 @@ void testInverseReal() {
 		*/
 }
 void testMatrixComplex() {
-	ComplexNumber** c1 = new ComplexNumber*[3]; //3x5 matrix
-	c1[0] = new ComplexNumber[5];
+	ComplexNumber** c1 = Matrix::allocateContiguousMatrix(3, 5);; //3x5 matrix
+
 	c1[0][0] = ComplexNumber(1, 2);
 	c1[0][1] = ComplexNumber(2, 3);
 	c1[0][2] = ComplexNumber(3, 4);
 	c1[0][3] = ComplexNumber(4, 5);
 	c1[0][4] = ComplexNumber(5, 6);
-	c1[1] = new ComplexNumber[5];
+
 	c1[1][0] = ComplexNumber(6, 7);
 	c1[1][1] = ComplexNumber(7, 8);
 	c1[1][2] = ComplexNumber(8, 9);
 	c1[1][3] = ComplexNumber(9, 10);
 	c1[1][4] = ComplexNumber(10, 11);
-	c1[2] = new ComplexNumber[5];
+
 	c1[2][0] = ComplexNumber(11, 12);
 	c1[2][1] = ComplexNumber(12, 13);
 	c1[2][2] = ComplexNumber(13, 14);
@@ -258,37 +258,37 @@ void testMatrixComplex() {
 	std::cout<< m1 << "\n\n" << m1.conjugateTranspose() << "\n\n";
 }
 void testMatrix() {
-	ComplexNumber** c1 = new ComplexNumber*[3]; //3x4 matrix
-	c1[0] = new ComplexNumber[4];
+	ComplexNumber** c1 = Matrix::allocateContiguousMatrix(3, 4);; //3x4 matrix
+
 	c1[0][0] = ComplexNumber(1, 0);
 	c1[0][1] = ComplexNumber(2, 0);
 	c1[0][2] = ComplexNumber(3, 0);
 	c1[0][3] = ComplexNumber(4, 0);
-	c1[1] = new ComplexNumber[4];
+
 	c1[1][0] = ComplexNumber(5, 0);
 	c1[1][1] = ComplexNumber(6, 0);
 	c1[1][2] = ComplexNumber(7, 0);
 	c1[1][3] = ComplexNumber(8, 0);
-	c1[2] = new ComplexNumber[4];
+
 	c1[2][0] = ComplexNumber(9, 0);
 	c1[2][1] = ComplexNumber(10, 0);
 	c1[2][2] = ComplexNumber(11, 0);
 	c1[2][3] = ComplexNumber(12, 0);
 
-	ComplexNumber** c2 = new ComplexNumber*[4]; //4x3 matrix
-	c2[0] = new ComplexNumber[3];
+	ComplexNumber** c2 = Matrix::allocateContiguousMatrix(4, 3);; //4x3 matrix
+
 	c2[0][0] = ComplexNumber(9, 0);
 	c2[0][1] = ComplexNumber(8, 0);
 	c2[0][2] = ComplexNumber(7, 0);
-	c2[1] = new ComplexNumber[3];
+
 	c2[1][0] = ComplexNumber(5, 0);
 	c2[1][1] = ComplexNumber(4, 0);
 	c2[1][2] = ComplexNumber(3, 0);
-	c2[2] = new ComplexNumber[3];
+
 	c2[2][0] = ComplexNumber(1, 0);
 	c2[2][1] = ComplexNumber(12, 0);
 	c2[2][2] = ComplexNumber(11, 0);
-	c2[3] = new ComplexNumber[3];
+
 	c2[3][0] = ComplexNumber(6, 0);
 	c2[3][1] = ComplexNumber(2, 0);
 	c2[3][2] = ComplexNumber(10, 0);

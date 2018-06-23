@@ -8,31 +8,15 @@ Matrix::Matrix(const std::string& s) {
 	initMatrix(rowVectors);
 }
 Matrix::Matrix(const size_t& r, const size_t& c) : rows(r), cols(c) {
-	matrix = new ComplexNumber*[rows];
-	#pragma omp parallel for
-	for (size_t i = 0; i < rows; i++) {
-		matrix[i] = new ComplexNumber[cols];
-	}
+	matrix = allocateContiguousMatrix(rows, cols);
 }
 Matrix::Matrix(ComplexNumber** m, const size_t& r, const size_t& c) :rows(r), cols(c) {
-	matrix = new ComplexNumber*[rows];
-	#pragma omp parallel for
-	for (size_t i = 0; i < rows; i++) {
-		matrix[i] = new ComplexNumber[cols];
-		for (size_t j = 0; j < cols; j++) {
-			matrix[i][j] = m[i][j];
-		}
-	}
+	matrix = allocateContiguousMatrix(rows, cols);
+	copyMatrix(&matrix, &m, rows, cols);
 }
 Matrix::Matrix(const Matrix& m) : rows(m.rows), cols(m.cols) {
-	matrix = new ComplexNumber*[rows];
-	#pragma omp parallel for
-	for (size_t i = 0; i < rows; i++) {
-		matrix[i] = new ComplexNumber[cols];
-		for (size_t j = 0; j < cols; j++) {
-			matrix[i][j] = m.matrix[i][j];
-		}
-	}
+	matrix = allocateContiguousMatrix(rows, cols);
+	copyMatrix(&matrix, &m.matrix, rows, cols);
 }
 Matrix::Matrix(Matrix&& m) : rows(m.rows), cols(m.cols) {
 	matrix = m.matrix;
@@ -40,11 +24,7 @@ Matrix::Matrix(Matrix&& m) : rows(m.rows), cols(m.cols) {
 }
 Matrix::~Matrix() {
 	if (matrix) {
-		#pragma omp parallel for
-		for (size_t i = 0; i < rows; i++) {
-			delete[] matrix[i];
-		}
-		delete[] matrix;
+		destroyContiguousMatrix(&this->matrix);
 	}
 }
 Matrix& Matrix::operator=(const Matrix& m) {
@@ -53,30 +33,14 @@ Matrix& Matrix::operator=(const Matrix& m) {
 	}
 	if (rows == m.rows && cols == m.cols) {
 		//do not reallocate matrix
-		#pragma omp parallel for
-		for (size_t i = 0; i < rows; i++) {
-			for (size_t j = 0; j < cols; j++) {
-				matrix[i][j] = m.matrix[i][j];
-			}
-		}
+		copyMatrix(&matrix, &m.matrix, rows, cols);
 		return *this;
 	}
-	#pragma omp parallel for
-	for (size_t i = 0; i < rows; i++) {
-		delete[] matrix[i];
-	}
-	#pragma omp barrier
-	delete[] matrix;
+	destroyContiguousMatrix(&this->matrix);
 	rows = m.rows;
 	cols = m.cols;
-	matrix = new ComplexNumber*[m.rows];
-	#pragma omp parallel for
-	for (size_t i = 0; i < rows; i++) {
-		matrix[i] = new ComplexNumber[cols];
-		for (size_t j = 0; j < cols; j++) {
-			matrix[i][j] = m.matrix[i][j];
-		}
-	}
+	matrix = allocateContiguousMatrix(rows, cols);
+	copyMatrix(&matrix, &m.matrix, rows, cols);
 	return *this;
 }
 Matrix& Matrix::operator=(Matrix&& m) {
@@ -185,10 +149,9 @@ Matrix Matrix::dot(const Matrix& m) const {
 	if (cols != m.rows) {
 		//TODO: throw exception
 	}
-	ComplexNumber** result = new ComplexNumber*[rows];
+	ComplexNumber** result = allocateContiguousMatrix(rows, m.cols);
 	#pragma omp parallel for
 	for (size_t i = 0; i < rows; i++) {
-		result[i] = new ComplexNumber[m.cols];
 		for (size_t j = 0; j < m.cols; j++) {
 			for (size_t k = 0; k < cols; k++) {
 				result[i][j] += matrix[i][k] * m.matrix[k][j];
@@ -201,10 +164,9 @@ Matrix Matrix::augment(const Matrix& m) const {
 	if (rows != m.rows) {
 		//TODO: throw exception
 	}
-	ComplexNumber** c = new ComplexNumber*[rows];
+	ComplexNumber** c = allocateContiguousMatrix(rows, cols + m.cols);
 	#pragma omp parallel for
 	for (size_t i = 0; i < rows; i++) {
-		c[i] = new ComplexNumber[cols + m.cols];
 		for (size_t j = 0; j < cols; j++) {
 			c[i][j] = matrix[i][j];
 		}
@@ -215,10 +177,9 @@ Matrix Matrix::augment(const Matrix& m) const {
 	return Matrix(c, rows, cols + m.cols);
 }
 const Matrix Matrix::transpose() const {
-	ComplexNumber** result = new ComplexNumber*[cols];
+	ComplexNumber** result = allocateContiguousMatrix(cols, rows);
 	#pragma omp parallel for
 	for (size_t i = 0; i < cols; i++) {
-		result[i] = new ComplexNumber[rows];
 		for (size_t j = 0; j < rows; j++) {
 			result[i][j] = matrix[j][i];
 		}
@@ -237,10 +198,9 @@ void Matrix::checkDimensions(const Matrix& m1, const Matrix& m2) {
 	}
 }
 const Matrix Matrix::conjugateTranspose() const {
-	ComplexNumber** result = new ComplexNumber*[cols];
+	ComplexNumber** result = allocateContiguousMatrix(cols, rows);
 	#pragma omp parallel for
 	for (size_t i = 0; i < cols; i++) {
-		result[i] = new ComplexNumber[rows];
 		for (size_t j = 0; j < rows; j++) {
 			result[i][j] = matrix[j][i].conjugate();
 		}
@@ -345,25 +305,13 @@ Matrix Matrix::rowReduce() const {
 	return result;
 }
 Matrix Matrix::verticalPad(const size_t& zeros) const {
-	ComplexNumber** c = new ComplexNumber*[rows + zeros];
-	#pragma omp parallel for
-	for (size_t i = 0; i < rows; i++) {
-		c[i] = new ComplexNumber[cols];
-		for (size_t j = 0; j < cols; j++) {
-			c[i][j] = matrix[i][j];
-		}
-	}
+	ComplexNumber** c = allocateContiguousMatrix(rows + zeros, cols);
+	copyMatrix(&c, &matrix, rows, cols);
 	return Matrix(c, rows + zeros, cols);
 }
 Matrix Matrix::horizontalPad(const size_t& zeros) const {
-	ComplexNumber** c = new ComplexNumber*[rows];
-	#pragma omp parallel for
-	for (size_t i = 0; i < rows; i++) {
-		c[i] = new ComplexNumber[cols + zeros];
-		for (size_t j = 0; j < cols + zeros; j++) {
-			c[i][j] = matrix[i][j];
-		}
-	}
+	ComplexNumber** c = allocateContiguousMatrix(rows, cols + zeros);
+	copyMatrix(&c, &matrix, rows, cols);
 	return Matrix(c, rows, cols + zeros);
 }
 
@@ -411,6 +359,31 @@ size_t Matrix::findNextNonZeroEntry(const size_t& column) {
 	return -1;
 }
 
+ComplexNumber** Matrix::allocateContiguousMatrix(const size_t& rows, const size_t& cols) {
+	ComplexNumber** matrix = new ComplexNumber*[rows];
+	matrix[0] = new ComplexNumber[rows*cols];
+	#pragma omp parallel for
+	for (size_t i = 0; i < rows; ++i) {
+		matrix[i] = &matrix[0][i*cols];
+	}
+	return matrix;
+}
+
+void Matrix::destroyContiguousMatrix(ComplexNumber*** matrix) {
+	delete[] *matrix[0];
+	delete[] *matrix;
+}
+
+/** Copies all values from src into dest. */
+void Matrix::copyMatrix(ComplexNumber*** dest, ComplexNumber** const* src, const size_t& rows, const size_t& cols) const {
+	#pragma omp parallel for
+	for (size_t i = 0; i < rows; i++) {
+		for (size_t j = 0; j < cols; j++) {
+			(*dest)[i][j] = (*src)[i][j];
+		}
+	}
+}
+
 //private functions
 
 /*std::vector<std::string> parseRow(const std::string& str) {
@@ -447,9 +420,8 @@ const std::vector<std::vector<std::string>> Matrix::parseRowVectors(const std::s
 void Matrix::initMatrix(const std::vector<std::vector<std::string>>& rowVectors) {
 	rows = rowVectors.size();
 	cols = rowVectors.at(0).size();
-	matrix = new ComplexNumber*[rows];
+	matrix = allocateContiguousMatrix(rows, cols);
 	for (size_t i = 0; i < rows; i++) {
-		matrix[i] = new ComplexNumber[cols];
 		for (size_t j = 0; j < cols; j++) {
 			rowVectors.at(i).at(j) >> matrix[i][j]; //see ComplexNumber::operator>>
 		}
