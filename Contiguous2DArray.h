@@ -49,10 +49,10 @@ Contiguous2DArray<T>::~Contiguous2DArray() {
 
 template <typename T>
 T* Contiguous2DArray<T>::operator[](const size_t& row) const {
-	if (arr_ == nullptr) {
-		return nullptr;
+	if (arr_ != nullptr && row < rows_) {
+		return arr_[row];
 	}
-	return arr_[row];
+	return nullptr;
 }
 
 template <typename T>
