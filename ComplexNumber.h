@@ -12,12 +12,12 @@ and supports common arithmetic operations between complex numbers
 
 class ComplexNumber {
 public:
-	ComplexNumber() :real(0), imaginary(0) {}
-	ComplexNumber(double r, double i) :real(r), imaginary(i) {}
-	ComplexNumber(const ComplexNumber& c) :real(c.real), imaginary(c.imaginary) {}
+	ComplexNumber() :real_(0), imaginary_(0) {}
+	ComplexNumber(double r, double i) :real_(r), imaginary_(i) {}
+	ComplexNumber(const ComplexNumber& c) :real_(c.real_), imaginary_(c.imaginary_) {}
 	//ComplexNumber(const ComplexNumber&& c) :real(c.real), imaginary(c.imaginary) { std::cout << "Move constructor\n"; }
 	~ComplexNumber() {}
-	ComplexNumber conjugate() const { return ComplexNumber(real, -imaginary); }
+	ComplexNumber conjugate() const { return ComplexNumber(real_, -imaginary_); }
 	double magnitude() const;
 	friend const ComplexNumber operator+(const ComplexNumber&, const ComplexNumber&); //Returns the addition of two complex numbers
 	friend const ComplexNumber operator-(const ComplexNumber&, const ComplexNumber&); //Returns the difference of two complex numbers
@@ -39,7 +39,7 @@ public:
 	friend std::istream& operator>>(std::istream&, ComplexNumber&); //Extracts ComplexNumber data from an istream and inserts it into a ComplexNumber object
 	friend ComplexNumber& operator >> (const std::string&, ComplexNumber&);
 private:
-	double real;
-	double imaginary;
+	double real_;
+	double imaginary_;
 };
 #endif

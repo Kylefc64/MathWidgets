@@ -1,73 +1,53 @@
 #include "Matrix.h"
 #include "SquareMatrix.h"
 
-Matrix::Matrix(const std::string& s) {
+Matrix::Matrix(const std::string& s) : matrix_(0, 0) {
 	//Assumes str is syntactically correct (for now)
 	const std::vector<std::vector<std::string>> rowVectors = parseRowVectors(s);
 	//initialize the Matrix
 	initMatrix(rowVectors);
 }
-Matrix::Matrix(const size_t& r, const size_t& c) : rows(r), cols(c) {
-	matrix = allocateContiguousMatrix(rows, cols);
+Matrix::Matrix(const size_t& r, const size_t& c) : matrix_(r, c) {}
+Matrix::Matrix(const Contiguous2DArray<ComplexNumber>& m, const size_t& r, const size_t& c) :matrix_(r, c) {
+	copyMatrix(matrix_, m, r, c);
 }
-Matrix::Matrix(ComplexNumber** m, const size_t& r, const size_t& c) :rows(r), cols(c) {
-	matrix = allocateContiguousMatrix(rows, cols);
-	copyMatrix(&matrix, &m, rows, cols);
+Matrix::Matrix(const Matrix& m) : matrix_(m.numRows(), m.numCols()) {
+	copyMatrix(matrix_, m.matrix_, m.numRows(), m.numCols());
 }
-Matrix::Matrix(const Matrix& m) : rows(m.rows), cols(m.cols) {
-	matrix = allocateContiguousMatrix(rows, cols);
-	copyMatrix(&matrix, &m.matrix, rows, cols);
+Matrix::Matrix(Matrix&& m) : matrix_(std::move(m.matrix_)) {
 }
-Matrix::Matrix(Matrix&& m) : rows(m.rows), cols(m.cols) {
-	matrix = m.matrix;
-	m.matrix = nullptr;
-}
-Matrix::~Matrix() {
-	if (matrix) {
-		destroyContiguousMatrix(&this->matrix);
-	}
-}
+Matrix::~Matrix() {}
 Matrix& Matrix::operator=(const Matrix& m) {
 	if (this == &m) {
 		return *this;
 	}
-	if (rows == m.rows && cols == m.cols) {
+	if (numRows() == m.numRows() && numCols() == m.numCols()) {
 		//do not reallocate matrix
-		copyMatrix(&matrix, &m.matrix, rows, cols);
+		copyMatrix(matrix_, m.matrix_, numRows(), numCols());
 		return *this;
 	}
-	destroyContiguousMatrix(&this->matrix);
-	rows = m.rows;
-	cols = m.cols;
-	matrix = allocateContiguousMatrix(rows, cols);
-	copyMatrix(&matrix, &m.matrix, rows, cols);
+	matrix_ = Contiguous2DArray<ComplexNumber>(m.numRows(), m.numCols());
+	copyMatrix(matrix_, m.matrix_, numRows(), numCols());
 	return *this;
 }
 Matrix& Matrix::operator=(Matrix&& m) {
 	//std::cout << "move assignment operator";
-	ComplexNumber** temp = m.matrix;
-	size_t r = m.rows, c = m.cols;
-	m.matrix = matrix;
-	m.rows = rows;
-	m.cols = cols;
-	matrix = temp;
-	rows = r;
-	cols = c;
+	matrix_ = std::move(m.matrix_);
 	return *this;
 }
 ComplexNumber& Matrix::operator()(const size_t& row, const size_t& col) {
-	if (row >= rows || col >= cols) {
+	if (row >= numRows() || col >= numCols()) {
 		//TODO: throw exception
 	}
-	return matrix[row][col];
+	return matrix_[row][col];
 }
 const Matrix operator+(const Matrix& m1, const Matrix& m2) {
 	Matrix::checkDimensions(m1, m2);
 	Matrix m = Matrix(m1);
 	#pragma omp parallel for
-	for (size_t i = 0; i < m.rows; i++) {
-		for (size_t j = 0; j < m.cols; j++) {
-			m.matrix[i][j] += m2.matrix[i][j];
+	for (size_t i = 0; i < m.numRows(); i++) {
+		for (size_t j = 0; j < m.numCols(); j++) {
+			m.matrix_[i][j] += m2.matrix_[i][j];
 		}
 	}
 	return m;
@@ -76,9 +56,9 @@ const Matrix operator-(const Matrix& m1, const Matrix& m2) {
 	Matrix::checkDimensions(m1, m2);
 	Matrix m = Matrix(m1);
 	#pragma omp parallel for
-	for (size_t i = 0; i < m.rows; i++) {
-		for (size_t j = 0; j < m.cols; j++) {
-			m.matrix[i][j] -= m2.matrix[i][j];
+	for (size_t i = 0; i < m.numRows(); i++) {
+		for (size_t j = 0; j < m.numCols(); j++) {
+			m.matrix_[i][j] -= m2.matrix_[i][j];
 		}
 	}
 	return m;
@@ -87,9 +67,9 @@ const Matrix operator*(const Matrix& m1, const Matrix& m2) {
 	Matrix::checkDimensions(m1, m2);
 	Matrix m = Matrix(m1);
 	#pragma omp parallel for
-	for (size_t i = 0; i < m.rows; i++) {
-		for (size_t j = 0; j < m.cols; j++) {
-			m.matrix[i][j] *= m2.matrix[i][j];
+	for (size_t i = 0; i < m.numRows(); i++) {
+		for (size_t j = 0; j < m.numCols(); j++) {
+			m.matrix_[i][j] *= m2.matrix_[i][j];
 		}
 	}
 	return m;
@@ -98,9 +78,9 @@ const Matrix operator/(const Matrix& m1, const Matrix& m2) {
 	Matrix::checkDimensions(m1, m2);
 	Matrix m = Matrix(m1);
 	#pragma omp parallel for
-	for (size_t i = 0; i < m.rows; i++) {
-		for (size_t j = 0; j < m.cols; j++) {
-			m.matrix[i][j] /= m2.matrix[i][j];
+	for (size_t i = 0; i < m.numRows(); i++) {
+		for (size_t j = 0; j < m.numCols(); j++) {
+			m.matrix_[i][j] /= m2.matrix_[i][j];
 		}
 	}
 	return m;
@@ -108,9 +88,9 @@ const Matrix operator/(const Matrix& m1, const Matrix& m2) {
 const Matrix& Matrix::operator+=(const Matrix& m) {
 	Matrix::checkDimensions(*this, m);
 	#pragma omp parallel for
-	for (size_t i = 0; i < m.rows; i++) {
-		for (size_t j = 0; j < m.cols; j++) {
-			matrix[i][j] += m.matrix[i][j];
+	for (size_t i = 0; i < m.numRows(); i++) {
+		for (size_t j = 0; j < m.numCols(); j++) {
+			matrix_[i][j] += m.matrix_[i][j];
 		}
 	}
 	return *this;
@@ -118,9 +98,9 @@ const Matrix& Matrix::operator+=(const Matrix& m) {
 const Matrix& Matrix::operator-=(const Matrix& m) {
 	Matrix::checkDimensions(*this, m);
 	#pragma omp parallel for
-	for (size_t i = 0; i < m.rows; i++) {
-		for (size_t j = 0; j < m.cols; j++) {
-			matrix[i][j] -= m.matrix[i][j];
+	for (size_t i = 0; i < m.numRows(); i++) {
+		for (size_t j = 0; j < m.numCols(); j++) {
+			matrix_[i][j] -= m.matrix_[i][j];
 		}
 	}
 	return *this;
@@ -128,9 +108,9 @@ const Matrix& Matrix::operator-=(const Matrix& m) {
 const Matrix& Matrix::operator*=(const Matrix& m) {
 	Matrix::checkDimensions(*this, m);
 	#pragma omp parallel for
-	for (size_t i = 0; i < m.rows; i++) {
-		for (size_t j = 0; j < m.cols; j++) {
-			matrix[i][j] *= m.matrix[i][j];
+	for (size_t i = 0; i < m.numRows(); i++) {
+		for (size_t j = 0; j < m.numCols(); j++) {
+			matrix_[i][j] *= m.matrix_[i][j];
 		}
 	}
 	return *this;
@@ -138,85 +118,85 @@ const Matrix& Matrix::operator*=(const Matrix& m) {
 const Matrix& Matrix::operator/=(const Matrix& m) {
 	Matrix::checkDimensions(*this, m);
 	#pragma omp parallel for
-	for (size_t i = 0; i < m.rows; i++) {
-		for (size_t j = 0; j < m.cols; j++) {
-			matrix[i][j] /= m.matrix[i][j];
+	for (size_t i = 0; i < m.numRows(); i++) {
+		for (size_t j = 0; j < m.numCols(); j++) {
+			matrix_[i][j] /= m.matrix_[i][j];
 		}
 	}
 	return *this;
 }
 Matrix Matrix::dot(const Matrix& m) const {
-	if (cols != m.rows) {
+	if (numCols() != m.numRows()) {
 		//TODO: throw exception
 	}
-	ComplexNumber** result = allocateContiguousMatrix(rows, m.cols);
+	Contiguous2DArray<ComplexNumber> result(numRows(), m.numCols());
 	#pragma omp parallel for
-	for (size_t i = 0; i < rows; i++) {
-		for (size_t j = 0; j < m.cols; j++) {
-			for (size_t k = 0; k < cols; k++) {
-				result[i][j] += matrix[i][k] * m.matrix[k][j];
+	for (size_t i = 0; i < numRows(); i++) {
+		for (size_t j = 0; j < m.numCols(); j++) {
+			for (size_t k = 0; k < numCols(); k++) {
+				result[i][j] += matrix_[i][k] * m.matrix_[k][j];
 			}
 		}
 	}
-	return Matrix(result, rows, m.cols);
+	return Matrix(result, numRows(), m.numCols());
 }
 Matrix Matrix::augment(const Matrix& m) const {
-	if (rows != m.rows) {
+	if (numRows() != m.numRows()) {
 		//TODO: throw exception
 	}
-	ComplexNumber** c = allocateContiguousMatrix(rows, cols + m.cols);
+	Contiguous2DArray<ComplexNumber> c(numRows(), numCols() + m.numCols());
 	#pragma omp parallel for
-	for (size_t i = 0; i < rows; i++) {
-		for (size_t j = 0; j < cols; j++) {
-			c[i][j] = matrix[i][j];
+	for (size_t i = 0; i < numRows(); i++) {
+		for (size_t j = 0; j < numCols(); j++) {
+			c[i][j] = matrix_[i][j];
 		}
-		for (size_t j = 0; j < m.cols; j++) {
-			c[i][j + cols] = m.matrix[i][j];
+		for (size_t j = 0; j < m.numCols(); j++) {
+			c[i][j + numCols()] = m.matrix_[i][j];
 		}
 	}
-	return Matrix(c, rows, cols + m.cols);
+	return Matrix(c, numRows(), numCols() + m.numCols());
 }
 const Matrix Matrix::transpose() const {
-	ComplexNumber** result = allocateContiguousMatrix(cols, rows);
+	Contiguous2DArray<ComplexNumber> result(numCols(), numRows());
 	#pragma omp parallel for
-	for (size_t i = 0; i < cols; i++) {
-		for (size_t j = 0; j < rows; j++) {
-			result[i][j] = matrix[j][i];
+	for (size_t i = 0; i < numCols(); i++) {
+		for (size_t j = 0; j < numRows(); j++) {
+			result[i][j] = matrix_[j][i];
 		}
 	}
-	return Matrix(result, cols, rows);
+	return Matrix(result, numCols(), numRows());
 }
 Matrix Matrix::leastSquares(const Matrix& A, const Matrix& b) {
-	if (b.cols != 1) {
+	if (b.numCols() != 1) {
 		//TODO: throw exception
 	}
 	return SquareMatrix(A.transpose().dot(A)).inverse().dot(A.transpose()).dot(b);
 }
 void Matrix::checkDimensions(const Matrix& m1, const Matrix& m2) {
-	if (m1.rows != m2.rows || m1.cols != m2.cols) {
+	if (m1.numRows() != m2.numRows() || m1.numCols() != m2.numCols()) {
 		//TODO: throw Exception
 	}
 }
 const Matrix Matrix::conjugateTranspose() const {
-	ComplexNumber** result = allocateContiguousMatrix(cols, rows);
+	Contiguous2DArray<ComplexNumber> result(numCols(), numCols());
 	#pragma omp parallel for
-	for (size_t i = 0; i < cols; i++) {
-		for (size_t j = 0; j < rows; j++) {
-			result[i][j] = matrix[j][i].conjugate();
+	for (size_t i = 0; i < numCols(); i++) {
+		for (size_t j = 0; j < numRows(); j++) {
+			result[i][j] = matrix_[j][i].conjugate();
 		}
 	}
-	return Matrix(result, cols, rows);
+	return Matrix(result, numCols(), numRows());
 }
 std::ostream& operator<<(std::ostream& os, const Matrix& c) {
-	os << "[[" << c.matrix[0][0];
-	for (size_t j = 1; j < c.cols; j++) {
-		os << ", " << c.matrix[0][j];
+	os << "[[" << c.matrix_[0][0];
+	for (size_t j = 1; j < c.numCols(); j++) {
+		os << ", " << c.matrix_[0][j];
 	}
 	os << ']';
-	for (size_t i = 1; i < c.rows; i++) {
-		os << ",\n[" << c.matrix[i][0];
-		for (size_t j = 1; j < c.cols; j++) {
-			os << ", " << c.matrix[i][j];
+	for (size_t i = 1; i < c.numRows(); i++) {
+		os << ",\n[" << c.matrix_[i][0];
+		for (size_t j = 1; j < c.numCols(); j++) {
+			os << ", " << c.matrix_[i][j];
 		}
 		os << ']';
 	}
@@ -263,8 +243,8 @@ std::istream& operator>>(std::istream& is, Matrix& c) {
 	return is;
 }
 size_t Matrix::findNextZeroRow(const size_t& index) const {
-	for (size_t i = index; i < rows; i++) {
-		if (allZeros(i, index + 1, rows)) { //index+1 b/c findNextNonZeroEntry already checked for zeros in column <index>
+	for (size_t i = index; i < numRows(); i++) {
+		if (allZeros(i, index + 1, numRows())) { //index+1 b/c findNextNonZeroEntry already checked for zeros in column <index>
 			return i;
 		}
 	}
@@ -274,30 +254,30 @@ size_t Matrix::findNextZeroRow(const size_t& index) const {
 Matrix Matrix::rowReduce() const {
 	//Usually works except for special cases:
 	Matrix result(*this);
-	for (size_t j = 0; j < rows; j++) {
+	for (size_t j = 0; j < numRows(); j++) {
 		size_t nextRow = result.findNextNonZeroEntry(j);
-		if (nextRow == rows) {
+		if (nextRow == numRows()) {
 			continue;
 		} else if (nextRow == -1) { //the entire column has 0 entries
 			nextRow = result.findNextZeroRow(j);
-			swap(result.matrix[nextRow], result.matrix[j]);
+			swap(result.matrix_[nextRow], result.matrix_[j], result.numCols());
 			continue;
 		} else if (nextRow != j) { //keeps the pivots in the correct rows/columns
-			swap(result.matrix[nextRow], result.matrix[j]);
+			swap(result.matrix_[nextRow], result.matrix_[j], result.numCols());
 			nextRow = j;
 		}
 		//divide row nextRow by the first non-zero entry in that row
 		//this results in a "1" in column j
-		ComplexNumber divisor = result.matrix[nextRow][j];
-		for (size_t k = j; k < cols; k++) {
-			result.matrix[nextRow][k] /= divisor;
+		ComplexNumber divisor = result.matrix_[nextRow][j];
+		for (size_t k = j; k < numCols(); k++) {
+			result.matrix_[nextRow][k] /= divisor;
 		}
 		//zero out column j of every row except for nextRow
-		for (size_t i = 0; i < rows; i++) {
+		for (size_t i = 0; i < numRows(); i++) {
 			if (i != nextRow) {
-				ComplexNumber multiple = result.matrix[i][j];
-				for (size_t k = j; k < cols; k++) {
-					result.matrix[i][k] -= multiple * result.matrix[nextRow][k];
+				ComplexNumber multiple = result.matrix_[i][j];
+				for (size_t k = j; k < numCols(); k++) {
+					result.matrix_[i][k] -= multiple * result.matrix_[nextRow][k];
 				}
 			}
 		}
@@ -305,14 +285,14 @@ Matrix Matrix::rowReduce() const {
 	return result;
 }
 Matrix Matrix::verticalPad(const size_t& zeros) const {
-	ComplexNumber** c = allocateContiguousMatrix(rows + zeros, cols);
-	copyMatrix(&c, &matrix, rows, cols);
-	return Matrix(c, rows + zeros, cols);
+	Contiguous2DArray<ComplexNumber> c(numRows() + zeros, numCols());
+	copyMatrix(c, matrix_, numRows(), numCols());
+	return Matrix(c, numRows() + zeros, numCols());
 }
 Matrix Matrix::horizontalPad(const size_t& zeros) const {
-	ComplexNumber** c = allocateContiguousMatrix(rows, cols + zeros);
-	copyMatrix(&c, &matrix, rows, cols);
-	return Matrix(c, rows, cols + zeros);
+	Contiguous2DArray<ComplexNumber> c(numRows(), numCols() + zeros);
+	copyMatrix(c, matrix_, numRows(), numCols());
+	return Matrix(c, numRows(), numCols() + zeros);
 }
 
 Matrix Matrix::nullSpace() const { //this function is incomplete
@@ -326,60 +306,45 @@ Matrix Matrix::nullSpace() const { //this function is incomplete
 bool Matrix::allZeros(const size_t& row, const size_t& start, const size_t& end) const {
 	ComplexNumber zero = ComplexNumber(0, 0);
 	for (size_t col = start; col < end; col++) {
-		if (matrix[row][col] != zero) {
+		if (matrix_[row][col] != zero) {
 			return false;
 		}
 	}
 	return true;
 }
 size_t Matrix::numRows() const {
-	return rows;
+	return matrix_.numRows();
 }
 size_t Matrix::numCols() const {
-	return cols;
+	return matrix_.numCols();
 }
 
 //protected functions
 
 /* Returns the ith row. Assumes that derived classes request a valid row. */
 ComplexNumber* Matrix::getRow(const size_t& i) const {
-	return matrix[i];
+	return matrix_[i];
 }
 
 /* Returns the row of the next non-zero entry in the specified column, or -1. */
 size_t Matrix::findNextNonZeroEntry(const size_t& column) {
-	if (column == rows) {
+	if (column == numRows()) {
 		return column; //if there are no more rows
 	}
-	for (size_t i = column; i < rows; i++) {
-		if (matrix[i][column] != ComplexNumber(0, 0)) {
+	for (size_t i = column; i < numRows(); i++) {
+		if (matrix_[i][column] != ComplexNumber(0, 0)) {
 			return i;
 		}
 	}
 	return -1;
 }
 
-ComplexNumber** Matrix::allocateContiguousMatrix(const size_t& rows, const size_t& cols) {
-	ComplexNumber** matrix = new ComplexNumber*[rows];
-	matrix[0] = new ComplexNumber[rows*cols];
-	#pragma omp parallel for
-	for (size_t i = 0; i < rows; ++i) {
-		matrix[i] = &matrix[0][i*cols];
-	}
-	return matrix;
-}
-
-void Matrix::destroyContiguousMatrix(ComplexNumber*** matrix) {
-	delete[] *matrix[0];
-	delete[] *matrix;
-}
-
 /** Copies all values from src into dest. */
-void Matrix::copyMatrix(ComplexNumber*** dest, ComplexNumber** const* src, const size_t& rows, const size_t& cols) const {
+void Matrix::copyMatrix(Contiguous2DArray<ComplexNumber>& dest, const Contiguous2DArray<ComplexNumber>& src, const size_t& rows, const size_t& cols) const {
 	#pragma omp parallel for
 	for (size_t i = 0; i < rows; i++) {
 		for (size_t j = 0; j < cols; j++) {
-			(*dest)[i][j] = (*src)[i][j];
+			dest[i][j] = src[i][j];
 		}
 	}
 }
@@ -390,11 +355,14 @@ void Matrix::copyMatrix(ComplexNumber*** dest, ComplexNumber** const* src, const
 
 }*/
 
-void Matrix::swap(ComplexNumber*& c1, ComplexNumber*& c2)  const {
-	ComplexNumber* temp = c1;
-	c1 = c2;
-	c2 = temp;
-	temp = nullptr;
+/** Swaps the elements of an array that contains size elements. */
+void Matrix::swap(ComplexNumber* c1, ComplexNumber* c2, const size_t& size)  const {
+	ComplexNumber temp;
+	for (size_t i = 0; i < size; i++) {
+		temp = c1[i];
+		c1[i] = c2[i];
+		c2[i] = temp;
+	}
 }
 const std::vector<std::vector<std::string>> Matrix::parseRowVectors(const std::string s) const {
 	std::string str(s);
@@ -418,12 +386,12 @@ const std::vector<std::vector<std::string>> Matrix::parseRowVectors(const std::s
 	return rowVectors;
 }
 void Matrix::initMatrix(const std::vector<std::vector<std::string>>& rowVectors) {
-	rows = rowVectors.size();
-	cols = rowVectors.at(0).size();
-	matrix = allocateContiguousMatrix(rows, cols);
+	size_t rows = rowVectors.size();
+	size_t cols = rowVectors.at(0).size();
+	matrix_ = Contiguous2DArray<ComplexNumber>(rows, cols);
 	for (size_t i = 0; i < rows; i++) {
 		for (size_t j = 0; j < cols; j++) {
-			rowVectors.at(i).at(j) >> matrix[i][j]; //see ComplexNumber::operator>>
+			rowVectors.at(i).at(j) >> matrix_[i][j]; //see ComplexNumber::operator>>
 		}
 	}
 }

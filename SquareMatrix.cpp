@@ -1,18 +1,18 @@
 #include "SquareMatrix.h"
 #include "Matrix.h"
 SquareMatrix::SquareMatrix(const std::string& s) : Matrix(s) {
-	if (rows != cols) {
+	if (numRows() != numCols()) {
 		// TODO: throw exception (not a square matrix)
 	}
 }
-SquareMatrix::SquareMatrix(ComplexNumber** m, const size_t& size) : Matrix(m, size, size) {
-	if (rows != cols) {
+SquareMatrix::SquareMatrix(const Contiguous2DArray<ComplexNumber>& m, const size_t& size) : Matrix(m, size, size) {
+	if (numRows() != numCols()) {
 		// TODO: throw exception (not a square matrix)
 	}
 }
 /* Moves an existing Matrix into a SquareMatrix object. */
 SquareMatrix::SquareMatrix(Matrix&& m) : Matrix(std::move(m)) {
-	if (rows != cols) {
+	if (numRows() != numCols()) {
 		// TODO: throw exception (not a square matrix)
 	}
 }
@@ -46,32 +46,30 @@ const SquareMatrix SquareMatrix::inverse() const {
 	}
 	}*/
 	//verify that the matrix is indeed invertible (that all rows are non-zero after Gaussian-elimination)
-	for (size_t i = 0; i < rows; i++) {
-		if (augmented.allZeros(i, 0, 2 * cols)) {
+	for (size_t i = 0; i < numRows(); i++) {
+		if (augmented.allZeros(i, 0, 2 * numCols())) {
 			//TODO: throw exception
 		}
 	}
 	//de-augment the matrix
-	ComplexNumber** c = new ComplexNumber*[rows];
+	Contiguous2DArray<ComplexNumber> c(numRows(), numCols());
 	#pragma omp parallel for
-	for (size_t i = 0; i < rows; i++) {
-		c[i] = new ComplexNumber[cols];
-		for (size_t j = 0; j < cols; j++) {
-			c[i][j] = augmented(i, j + cols);
+	for (size_t i = 0; i < numRows(); i++) {
+		for (size_t j = 0; j < numCols(); j++) {
+			c[i][j] = augmented(i, j + numCols());
 		}
 	}
-	return SquareMatrix(c, rows);
+	return SquareMatrix(c, numRows());
 }
 /* Returns a new identity SquareMatrix that has the same dimensions of this matrix. */
 const SquareMatrix SquareMatrix::identity() const {
-	return identity(rows);
+	return identity(numRows());
 }
 /* Returns a new identity SquareMatrix of the given dimensions. */
 const SquareMatrix SquareMatrix::identity(const size_t& size) {
-	ComplexNumber** c = new ComplexNumber*[size];
+	Contiguous2DArray<ComplexNumber> c(size, size);
 	#pragma omp parallel for
 	for (size_t i = 0; i < size; i++) {
-		c[i] = new ComplexNumber[size];
 		for (size_t j = 0; j < size; j++) {
 			if (i == j) {
 				c[i][j] = 1;

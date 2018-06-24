@@ -1,7 +1,6 @@
 /*
 TODO:
--Use a new class to represent 2d contiguous matrices so they they are destroyed
-	automatically when their scope is exited
+-Automate testing so that manual inspection is not necessary to verify correctness
 -Fix inverse function
 
 This program will perform common matrix operations including, but not limited to:
@@ -23,6 +22,7 @@ This program will perform common matrix operations including, but not limited to
 #include "Matrix.h"
 #include "SquareMatrix.h"
 #include <time.h>
+#include "Contiguous2DArray.h"
 
 void testOpenMP();
 void testNullSpace();
@@ -35,6 +35,7 @@ void testInverseReal();
 void testMatrixComplex();
 void testMatrix();
 void testComplexNumber();
+void testContiguous2DArray();
 
 int main() {
 	clock_t tStart = clock(); //
@@ -54,14 +55,15 @@ int main() {
 	//testMatrixComplex();
 	//testMatrix();
 	//testComplexNumber();
+	//testContiguous2DArray();
 	printf("Time taken: %.2fs\n", (double)(clock() - tStart) / CLOCKS_PER_SEC); //
 	return 0;
 }
 
 void testOpenMP() {
 	#define MAX_SIZE 3750
-	ComplexNumber **c1 = Matrix::allocateContiguousMatrix(MAX_SIZE, MAX_SIZE);
-	ComplexNumber **c2 = Matrix::allocateContiguousMatrix(MAX_SIZE, MAX_SIZE);
+	Contiguous2DArray<ComplexNumber> c1(MAX_SIZE, MAX_SIZE);
+	Contiguous2DArray<ComplexNumber> c2(MAX_SIZE, MAX_SIZE);
 	clock_t tStart = clock(); //start timer
 	#pragma omp parallel for
 	for (size_t i = 0; i < MAX_SIZE; i++) {
@@ -114,14 +116,14 @@ void testMatrixStringConstructor() {
 	std::cout << m2 << "\n\n";
 }
 void testConstructor() {
-	ComplexNumber** c1 = Matrix::allocateContiguousMatrix(2, 2);
+	Contiguous2DArray<ComplexNumber> c1(2, 2);
 	c1[0][0] = ComplexNumber(1, 0);
 	c1[0][1] = ComplexNumber(2, 0);
 
 	c1[1][0] = ComplexNumber(3, 0);
 	c1[1][1] = ComplexNumber(4, 0);
 
-	ComplexNumber** c2 = Matrix::allocateContiguousMatrix(2, 2);
+	Contiguous2DArray<ComplexNumber> c2(2, 2);
 	c2[0][0] = ComplexNumber(5, 0);
 	c2[0][1] = ComplexNumber(6, 0);
 
@@ -136,7 +138,7 @@ void testConstructor() {
 	std::cout << m1 << "\n\n";
 }
 void testLeastSquares() { //answer should be: [[1.0507],[-0.143254]]
-	ComplexNumber** a = Matrix::allocateContiguousMatrix(6, 2);
+	Contiguous2DArray<ComplexNumber> a(6, 2);
 
 	a[0][0] = ComplexNumber(1.2, 0);
 	a[0][1] = ComplexNumber(1, 0);
@@ -156,7 +158,7 @@ void testLeastSquares() { //answer should be: [[1.0507],[-0.143254]]
 	a[5][0] = ComplexNumber(5.9, 0);
 	a[5][1] = ComplexNumber(1, 0);
 
-	ComplexNumber** b = Matrix::allocateContiguousMatrix(6, 1);
+	Contiguous2DArray<ComplexNumber> b(6, 1);
 
 	b[0][0] = ComplexNumber(1.1, 0);
 
@@ -174,7 +176,7 @@ void testLeastSquares() { //answer should be: [[1.0507],[-0.143254]]
 }
 void testSolver() {
 	//x = [2, 3, 5]
-	ComplexNumber** a = Matrix::allocateContiguousMatrix(3, 3);; //A
+	Contiguous2DArray<ComplexNumber> a(3, 3);; //A
 
 	a[0][0] = ComplexNumber(1, 0);
 	a[0][1] = ComplexNumber(2, 0);
@@ -188,7 +190,7 @@ void testSolver() {
 	a[2][1] = ComplexNumber(-3, 0);
 	a[2][2] = ComplexNumber(7, 0);
 
-	ComplexNumber** b = Matrix::allocateContiguousMatrix(3, 1);; //b
+	Contiguous2DArray<ComplexNumber> b(3, 1);; //b
 
 	b[0][0] = ComplexNumber(23, 0);
 
@@ -234,7 +236,7 @@ void testInverseReal() {
 		*/
 }
 void testMatrixComplex() {
-	ComplexNumber** c1 = Matrix::allocateContiguousMatrix(3, 5);; //3x5 matrix
+	Contiguous2DArray<ComplexNumber> c1(3, 5);; //3x5 matrix
 
 	c1[0][0] = ComplexNumber(1, 2);
 	c1[0][1] = ComplexNumber(2, 3);
@@ -258,7 +260,7 @@ void testMatrixComplex() {
 	std::cout<< m1 << "\n\n" << m1.conjugateTranspose() << "\n\n";
 }
 void testMatrix() {
-	ComplexNumber** c1 = Matrix::allocateContiguousMatrix(3, 4);; //3x4 matrix
+	Contiguous2DArray<ComplexNumber> c1(3, 4);; //3x4 matrix
 
 	c1[0][0] = ComplexNumber(1, 0);
 	c1[0][1] = ComplexNumber(2, 0);
@@ -275,7 +277,7 @@ void testMatrix() {
 	c1[2][2] = ComplexNumber(11, 0);
 	c1[2][3] = ComplexNumber(12, 0);
 
-	ComplexNumber** c2 = Matrix::allocateContiguousMatrix(4, 3);; //4x3 matrix
+	Contiguous2DArray<ComplexNumber> c2(4, 3);; //4x3 matrix
 
 	c2[0][0] = ComplexNumber(9, 0);
 	c2[0][1] = ComplexNumber(8, 0);
@@ -323,4 +325,36 @@ void testComplexNumber() {
 		<< c1 - c2 << '\n'
 		<< c1 * c2 << '\n'
 		<< c1 / c2 << std::endl;
+}
+
+void testContiguous2DArray() {
+	Contiguous2DArray<int> intArr(2, 2);
+	intArr[0][0] = 1;
+	std::cout << intArr[0][0] << '\n';
+	intArr[0][1] = 2;
+	std::cout << intArr[0][1] << '\n';
+	intArr[1][0] = 3;
+	std::cout << intArr[1][0] << '\n';
+	intArr[1][1] = 4;
+	std::cout << intArr[1][1] << '\n';
+	for (size_t i = 0; i < 2; i++) {
+		for (size_t j = 0; j < 2; j++) {
+			std::cout << intArr[i][j] << '\n';
+		}
+	}
+
+	Contiguous2DArray<ComplexNumber> complexArr(2, 2);
+	complexArr[0][0] = ComplexNumber(1, 0);
+	std::cout << complexArr[0][0] << '\n';
+	complexArr[0][1] = ComplexNumber(2, 0);
+	std::cout << complexArr[0][1] << '\n';
+	complexArr[1][0] = ComplexNumber(3, 0);
+	std::cout << complexArr[1][0] << '\n';
+	complexArr[1][1] = ComplexNumber(4, 0);
+	std::cout << complexArr[1][1] << '\n';
+	for (size_t i = 0; i < 2; i++) {
+		for (size_t j = 0; j < 2; j++) {
+			std::cout << complexArr[i][j] << '\n';
+		}
+	}
 }

@@ -8,6 +8,7 @@
 #include "ComplexNumber.h"
 #include <omp.h>
 #include <intrin.h>
+#include "Contiguous2DArray.h"
 
 class Matrix {
 public:
@@ -15,7 +16,7 @@ public:
 	Matrix(const Matrix&); //copy constructor
 	Matrix(Matrix&&); //move constructor
 	Matrix(const size_t&, const size_t&); //creates a matrix of zeros
-	Matrix(ComplexNumber**, const size_t&, const size_t&); //mostly to be used for testing purposes
+	Matrix(const Contiguous2DArray<ComplexNumber>&, const size_t&, const size_t&); //mostly to be used for testing purposes
 	~Matrix();
 	Matrix& operator=(const Matrix&); //copy assignment operator
 	Matrix& operator=(Matrix&&); //move assignment operator
@@ -43,22 +44,18 @@ public:
 	bool allZeros(const size_t&, const size_t&, const size_t&) const; //returns true if the entire row (from start to end) is 0
 	size_t numRows() const;
 	size_t numCols() const;
-	static ComplexNumber** allocateContiguousMatrix(const size_t&, const size_t&); // allocates a contiguous rows*cols matrix
-	static void destroyContiguousMatrix(ComplexNumber***); // deallocates data pointed to by this->matrix
 
 	//Matrix LSCSort() const; //least significant column sort
 
 protected:
-	size_t rows;
-	size_t cols;
-	ComplexNumber** matrix;
+	Contiguous2DArray<ComplexNumber> matrix_;
 	ComplexNumber* getRow(const size_t&) const; // returns the ith row of matrix (assumes that i is a valid row)
 	size_t findNextNonZeroEntry(const size_t&); // returns the row of the first non-zero entry in the specified column, or -1
-	void copyMatrix(ComplexNumber***, ComplexNumber** const*, const size_t&, const size_t&) const;
+	void copyMatrix(Contiguous2DArray<ComplexNumber>&, const Contiguous2DArray<ComplexNumber>&, const size_t&, const size_t&) const;
 
 private:
 	//std::vector<std::string> parseRow(const std::string&); // returns a vector containing elements of a matrix row
-	void swap(ComplexNumber*&, ComplexNumber*&) const; // swaps the contents of each row
+	void swap(ComplexNumber*, ComplexNumber*, const size_t&) const; // swaps the contents of each row
 	size_t findNextZeroRow(const size_t&) const; // finds the next row full of zeros starting at the specified index
 	const std::vector<std::vector<std::string>> parseRowVectors(const std::string) const;
 	void initMatrix(const std::vector<std::vector<std::string>>&);
