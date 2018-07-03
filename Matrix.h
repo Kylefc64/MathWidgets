@@ -18,6 +18,8 @@ public:
 	Matrix(const size_t&, const size_t&); //creates a matrix of zeros
 	Matrix(const Contiguous2DArray<ComplexNumber>&, const size_t&, const size_t&); //mostly to be used for testing purposes
 	~Matrix();
+	friend const bool operator==(const Matrix&, const Matrix&);
+	friend const bool operator!=(const Matrix&, const Matrix&);
 	Matrix& operator=(const Matrix&); //copy assignment operator
 	Matrix& operator=(Matrix&&); //move assignment operator
 	ComplexNumber& operator()(const size_t&, const size_t&); //access/mutation operator

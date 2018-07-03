@@ -17,6 +17,23 @@ Matrix::Matrix(const Matrix& m) : matrix_(m.numRows(), m.numCols()) {
 Matrix::Matrix(Matrix&& m) : matrix_(std::move(m.matrix_)) {
 }
 Matrix::~Matrix() {}
+const bool operator==(const Matrix& m1, const Matrix& m2) {
+	if (m1.numRows() != m2.numRows() || m1.numCols() != m2.numCols()) {
+		return false;
+	}
+	#pragma omp parallel for
+	for (size_t i = 0; i < m1.numRows(); i++) {
+		for (size_t j = 0; j < m1.numCols(); j++) {
+			if (m1.matrix_[i][j] != m2.matrix_[i][j]) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+const bool operator!=(const Matrix& m1, const Matrix& m2) {
+	return !(m1 == m2);
+}
 Matrix& Matrix::operator=(const Matrix& m) {
 	if (this == &m) {
 		return *this;

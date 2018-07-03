@@ -17,7 +17,7 @@ SquareMatrix::SquareMatrix(Matrix&& m) : Matrix(std::move(m)) {
 	}
 }
 /* Returns a new SquareMatrix that is the inverse of this SquareMatrix. */
-const SquareMatrix SquareMatrix::inverse() const {
+SquareMatrix SquareMatrix::inverse() const {
 	Matrix augmented = augment(identity()).rowReduce();
 	/*Matrix augmented = augment(identity());
 	for (size_t j = 0; j < cols; j++) {
@@ -62,11 +62,11 @@ const SquareMatrix SquareMatrix::inverse() const {
 	return SquareMatrix(c, numRows());
 }
 /* Returns a new identity SquareMatrix that has the same dimensions of this matrix. */
-const SquareMatrix SquareMatrix::identity() const {
+SquareMatrix SquareMatrix::identity() const {
 	return identity(numRows());
 }
 /* Returns a new identity SquareMatrix of the given dimensions. */
-const SquareMatrix SquareMatrix::identity(const size_t& size) {
+SquareMatrix SquareMatrix::identity(const size_t& size) {
 	Contiguous2DArray<ComplexNumber> c(size, size);
 	#pragma omp parallel for
 	for (size_t i = 0; i < size; i++) {

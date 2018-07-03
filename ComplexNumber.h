@@ -38,6 +38,8 @@ public:
 	friend std::ostream& operator<<(std::ostream&, const ComplexNumber&); //Inserts the contents of a ComplexNumber into an ostream
 	friend std::istream& operator>>(std::istream&, ComplexNumber&); //Extracts ComplexNumber data from an istream and inserts it into a ComplexNumber object
 	friend ComplexNumber& operator >> (const std::string&, ComplexNumber&);
+	double real() const { return real_; }
+	double imaginary() const { return imaginary_; }
 private:
 	double real_;
 	double imaginary_;
